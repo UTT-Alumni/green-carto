@@ -5,8 +5,17 @@
 
 	import type { PageData } from './$types';
 	import type { D3Event, D3Link, D3Node } from '$lib/types';
+	import colors from '$lib/colors';
 
 	export let data: PageData;
+
+	let focus: D3Node | undefined;
+
+	$: types = [...new Set(data.actors.map(actor => actor.type))]
+	$: actors = data.actors.map(actor => ({
+		...actor,
+		color: colors[types.findIndex(type => type === actor.type)]
+	}))
 
 	const width = 960;
 	const height = 600;
@@ -47,12 +56,11 @@
 			.append('g')
 			.attr('class', 'nodes')
 			.selectAll('circle')
-			.data(data.actors)
+			.data(actors)
 			.enter()
 			.append('circle')
-			//I made the article/source nodes larger than the entity nodes
-			.attr('r', (d: D3Node) => radius)
-			.attr('fill', '#cccccc')
+			.attr('r', () => radius)
+			.attr('fill', (d: D3Node) => d.color)
 			.attr('stroke', '#424242')
 			.attr('stroke-width', '1');
 
@@ -60,7 +68,7 @@
 			.append('g')
 			.attr('class', 'labels')
 			.selectAll('text')
-			.data(data.actors)
+			.data(actors)
 			.enter()
 			.append('text')
 			.text((d: D3Node) => d.name)
@@ -70,7 +78,7 @@
 			return Math.min(radius, ((2 * radius + 0) / this.getComputedTextLength()) * 15) + 'px';
 		});
 
-		simulation.nodes(data.actors).on('tick', ticked);
+		simulation.nodes(actors).on('tick', ticked);
 
 		simulation.force('link').links(data.relations);
 
@@ -109,6 +117,10 @@
 			})
 			.on('mouseout', () => {
 				return tooltip.style('visibility', 'hidden');
+			})
+			.on('click', (event: D3Event, d: D3Node) => {
+				focus = d;
+				event.stopPropagation();
 			});
 	});
 </script>
@@ -118,14 +130,22 @@
 	description="Cartographie des acteurs dans le domaine du développement durable"
 />
 
+<svelte:window on:click={() => focus = undefined}/>
+
 <div id="networkGraph" />
+
+{#if focus}
+	<pre>{JSON.stringify(focus, null, 4)}</pre>
+{/if}
 
 <style>
 	:global(.labels) {
 		transform: translate(6px, 2px);
 	}
+	:global(circle) {
+		cursor: pointer;
+	}
 	:global(.label) {
-		cursor: default;
 		pointer-events: none;
 	}
 </style>

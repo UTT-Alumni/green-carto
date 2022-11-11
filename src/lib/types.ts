@@ -11,6 +11,7 @@ export type D3Node = Actor & {
 	y: number;
 	vx: number;
 	vy: number;
+	color: string;
 };
 
 export type Relation = {};
@@ -24,4 +25,5 @@ export type D3Link = Omit<Relation, 'source' | 'target'> & {
 export type D3Event = {
 	pageX: number;
 	pageY: number;
+	stopPropagation: () => void;
 };
